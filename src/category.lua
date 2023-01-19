@@ -64,17 +64,21 @@ end
 
 function list.fmap (cat, f)
     local l = {}
-    for i, v in ipairs (cat.value) do l[i] = f (v) end
+    for i, v in pairs (cat.value) do l[i] = f (v) end
     return C.list (l)
 end
 
 function list.pure (cat, v)
-    return C.list (v)
+    return C.list {v}
 end
 
 function list.applicative (cat, cat_f)
     local l = {}
-    for i, f in pairs (cat_f.value) do l[i] = cat:fmap (f) end
+    for i, f in ipairs (cat_f.value) do
+        for j, v in ipairs (cat.value) do
+            table.insert (l, f(v))
+        end
+    end
     return C.list (l)
 end
 
@@ -104,6 +108,14 @@ end
 
 function fun.fmap (cat, f)
     return C.fun (function (...) return f (cat.value (...)) end)
+end
+
+function fun.pure (cat, v)
+    return function (...) return v end
+end
+
+function fun.applicative (cat, cat_f)
+    return C.fun(function (w) return  cat_f.value (w) (cat.value (w)) end)
 end
 
 function C.fmap (f)
