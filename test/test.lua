@@ -34,7 +34,7 @@ end
 
 function Test_just:test_tostring ()
     local j = C.just (4 - 1)
-    lu.assertEquals (tostring(j), 'just (3)')
+    lu.assertEquals (tostring(j), '3 :: just')
 end
 
 function Test_just:test_fmap ()
@@ -68,7 +68,7 @@ Test_list = {}
 
 function Test_list:test_tostring ()
     local j = C.list {2, 3, 4, 5}
-    lu.assertEquals (tostring(j), 'list (2, 3, 4, 5)')
+    lu.assertEquals (tostring(j), '{ 2, 3, 4, 5 } :: list')
 end
 
 function Test_list:test_eq ()
@@ -99,7 +99,7 @@ function Test_list:test_replicate ()
 end
 
 function Test_list:test_pure ()
-    lu.assertEquals(C.list {}:pure (3), C.list {3})
+    lu.assertEquals( C.list {}:pure (3), C.list {3})
 end
 
 function Test_list:test_applicative ()
@@ -138,6 +138,34 @@ function Test_list:test_applicative_mul ()
     
     lu.assertEquals (C.applicative (w) (C.list {8, 10, 11}), 
                      C.list {16, 20, 22, 40, 50, 55, 80, 100, 110})
+end
+
+function Test_list:test_mappend ()
+
+    lu.assertEquals (C.mappend (C.list {1, 2, 3}) (C.list {8, 10, 11}), 
+                     C.list {1, 2, 3, 8, 10, 11})
+end
+
+function Test_list:test_bind ()
+
+    lu.assertEquals (C.bind (C.list {1, 2, 3}) (function (v) return C.list {v, -v} end), 
+                     C.list {1, -1, 2, -2, 3, -3})
+end
+
+function Test_list:test_return ()
+
+    lu.assertEquals (C.bind (C.list {1, 2, 3}) (function (v) return 
+                     C.bind (C.list {'a', 'b'}) (function (c) return 
+                     C.list {}:ret (C.list {v, c}) end)
+    end))
+end
+
+--------------------------------------------------------------------------------
+
+Test_product = {}
+
+function Test_product:test_mappend ()
+    lu.assertEquals (C.mappend (C.product (4)) (C.product (11)), C.product (4 * 11))
 end
 
 --------------------------------------------------------------------------------

@@ -6,4 +6,4 @@ install:
 	cp category.lua /usr/local/share/lua/5.4/
 
 test:
-	lua ../test/test.lua
+	lua ../test/test.lua -v
