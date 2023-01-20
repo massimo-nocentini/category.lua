@@ -159,16 +159,8 @@ function Test_list:test_return ()
 
     lu.assertEquals (C.bind (C.list {1, 2, 3}) (function (v) return 
                      C.bind (C.list {'a', 'b'}) (function (c) return 
-                     C.list {}:ret (C.list {v, c}) end) end),
-                     C.list {
-                        C.list {1, 'a'},
-                        C.list {1, 'b'},
-                        C.list {2, 'a'},
-                        C.list {2, 'b'},
-                        C.list {3, 'a'},
-                        C.list {3, 'b'},
-                     }
-                    )
+                     C.list {}:ret ( v..c ) end) end),
+                     C.list { '1a','1b', '2a', '2b', '3a', '3b', })
 end
 
 --------------------------------------------------------------------------------
