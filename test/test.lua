@@ -144,6 +144,9 @@ function Test_list:test_mappend ()
 
     lu.assertEquals (C.mappend (C.list {1, 2, 3}) (C.list {8, 10, 11}), 
                      C.list {1, 2, 3, 8, 10, 11})
+    
+    lu.assertEquals (C.list {1, 2, 3} .. C.list {8, 10, 11}, 
+                     C.list {1, 2, 3, 8, 10, 11})
 end
 
 function Test_list:test_bind ()
@@ -156,8 +159,16 @@ function Test_list:test_return ()
 
     lu.assertEquals (C.bind (C.list {1, 2, 3}) (function (v) return 
                      C.bind (C.list {'a', 'b'}) (function (c) return 
-                     C.list {}:ret (C.list {v, c}) end)
-    end))
+                     C.list {}:ret (C.list {v, c}) end) end),
+                     C.list {
+                        C.list {1, 'a'},
+                        C.list {1, 'b'},
+                        C.list {2, 'a'},
+                        C.list {2, 'b'},
+                        C.list {3, 'a'},
+                        C.list {3, 'b'},
+                     }
+                    )
 end
 
 --------------------------------------------------------------------------------
@@ -166,6 +177,7 @@ Test_product = {}
 
 function Test_product:test_mappend ()
     lu.assertEquals (C.mappend (C.product (4)) (C.product (11)), C.product (4 * 11))
+    lu.assertEquals (C.product (4) .. C.product (11), C.product (4 * 11))
 end
 
 --------------------------------------------------------------------------------
