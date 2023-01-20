@@ -177,32 +177,4 @@ product_mt.__concat = product.mappend
 
 -----------------------------------------------------------------------
 
-function C.fmap (f)
-    return function (cat) 
-        return cat:fmap (f)
-    end
-end
-
-function C.applicative (cat_f)
-    return function (cat) 
-        return cat:applicative (cat_f)
-    end
-end
-
-function C.bind (cat)
-    return function (f) 
-        return cat:bind (f)
-    end
-end
-
-function C.mempty (cat)
-    return cat:mempty ()
-end
-
-function C.mappend (cat)
-    return function (another_cat)
-        return cat:mappend (another_cat)
-    end
-end
-
 return C
