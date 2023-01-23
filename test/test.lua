@@ -56,6 +56,10 @@ function Test_just:test_applicative_fmap ()
     lu.assertEquals (C.just ' travolta':applicative (w), C.just ('john travolta'))
 end
 
+function Test_just:test_mappend ()
+    lu.assertEquals (C.just (C.product (3)) .. C.just (C.product (4)), C.just (C.product (12)))
+end
+
 --------------------------------------------------------------------------------
 
 Test_list = {}

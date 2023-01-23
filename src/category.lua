@@ -32,6 +32,12 @@ function just.applicative (cat, cat_f) return cat:fmap (cat_f.value) end
 just.ret = just.pure
 function just.bind (cat, f) return f (cat.value) end
 
+function just.mappend (cat, another)
+    return C.just (cat.value:mappend (another.value))
+end
+
+just_mt.__concat = just.mappend
+
 -----------------------------------------------------------------------
 
 local list = {}
