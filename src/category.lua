@@ -142,7 +142,7 @@ function fun.fmap (cat, f)
 end
 
 function fun.pure (cat, v)
-    return function (...) return v end
+    return C.fun (function (...) return v end)
 end
 
 function fun.applicative (cat, cat_f)

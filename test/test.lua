@@ -46,8 +46,8 @@ end
 
 function Test_just:test_applicative ()
     local three = 3
-    local j = C.just (add (1))
-    lu.assertEquals (j:pure (three):applicative (j), C.just (three + 1))
+    local cat = C.just (three)
+    lu.assertEquals (cat:applicative (cat:pure (add (1))), C.just (three + 1))
 end
 
 function Test_just:test_applicative_fmap ()
@@ -152,9 +152,10 @@ end
 
 function Test_list:test_return ()
 
-    lu.assertEquals (C.bind (C.list {1, 2, 3}) (function (v) return 
-                     C.bind (C.list {'a', 'b'}) (function (c) return 
-                     C.list {}:ret ( v..c ) end) end),
+    local cat = C.list {1, 2, 3}
+    lu.assertEquals (cat:bind (function (v) return 
+                     C.list {'a', 'b'}:bind (function (c) return 
+                     cat:ret ( v..c ) end) end),
                      C.list { '1a','1b', '2a', '2b', '3a', '3b', })
 end
 
@@ -187,8 +188,8 @@ function Test_fun:test_pure ()
 end
 
 function Test_fun:test_applicative_add_mul ()
-    local w = C.fmap (add) (C.fun (add (3)))
-    w = C.applicative (w) (C.fun (mul (100)))
+    local cat = C.fun (add (3))
+    local w = C.fun (mul (100)):applicative (cat:fmap (add))
     lu.assertEquals (w (5), 508)
 end
 
