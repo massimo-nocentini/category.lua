@@ -242,5 +242,12 @@ function Test_stream:test_mappend ()
                      C.list { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109 } )
 end
 
+function Test_stream:test_primes ()
+
+    local cat = C.primes ()
+    lu.assertEquals (cat:take (20):tolist (), 
+                     C.list { 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71 })
+end
+
 --------------------------------------------------------------------------------
 os.exit( lu.LuaUnit.run() )

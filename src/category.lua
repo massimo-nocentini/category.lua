@@ -230,9 +230,7 @@ function stream.tolist (cat)
     
     local tbl = {}
 
-    cat:do_ (function (...)
-        for i, v in ipairs (table.pack(...)) do table.insert (tbl, v) end
-    end)
+    cat:do_ (function (v) table.insert (tbl, v) end)
 
     return C.list (tbl)
 end
@@ -258,6 +256,16 @@ function stream.do_ (cat, f)
 
 end
 
+function stream.filter (cat, p)
+
+    return C.stream (function ()
+        cat:do_ (function (v) 
+            if p (v) then coroutine.yield (v) end 
+        end)
+    end)
+
+end
+
 function stream.take (cat, n)
 
     local M = lua.current_thread ()
@@ -275,6 +283,21 @@ function stream.take (cat, n)
     end)
 end
 
+function stream.ret (cat, v)
+    return C.stream (function () coroutine.yield (v) end)
+end
+
+function stream.next (cat)
+
+    local M = lua.current_thread ()
+    local L = cat.value
+    
+    local retcode, nres = lua.lua_resume (L, M, 0)
+    if retcode == lua.LUA_YIELD then return lua.pop (L, nres), cat
+    else error (lua.pop (L, nres)) end
+
+end
+
 function C.nats (s)
 
     s = s or 0
@@ -286,6 +309,20 @@ function C.nats (s)
         end
     end)
 
+end
+
+function C.primes ()
+
+    local function P (S)
+
+        return C.stream (function ()
+            local p, S = S:next ()
+            coroutine.yield (p)
+            P (S:filter (function (n) return n % p > 0 end)):do_(coroutine.yield)
+        end)
+    end
+
+    return P (C.nats (2))
 end
 
 stream_mt.__concat = stream.mappend
