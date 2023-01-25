@@ -189,137 +189,144 @@ product_mt.__concat = product.mappend
 local stream = {}
 local stream_mt = {__index = stream}
 
-function stream_mt.__eq (v, w)
-    if getmetatable (w) == stream_mt then return v.value == w.value
-    else return false end
-end
-
 function stream_mt.__tostring (cat)
     return string.format ('%s :: stream', tostring (cat.value))
 end
 
 function C.stream (s)
 
-    local S = lua.lua_newthread ()
-
-    assert (type(s) == 'function', 'Expected a function as lone argument.')
-
-    lua.push (S, s)
-
-    local j = {value = S}
+    local j = {value = s}
     setmetatable (j, stream_mt)
 
     return j
 end
 
 function stream.mempty (cat)
-    return C.stream (function () end)
+    return C.stream ()
+end
+
+function stream.dbind (cat, empty_f, table_f, susp_f)
+
+    if cat.value == nil then return empty_f (cat)
+    elseif type (cat.value) == 'table' then return table_f (cat.value.head, cat.value.tail, cat)
+    elseif type (cat.value) == 'function' then return susp_f (cat.value, cat)
+    else error 'Unknown stream variant.' end
 end
 
 function stream.mappend (cat, rest_cat)
-    return C.stream (function ()     
-        cat:do_ (coroutine.yield)
-        rest_cat:do_ (coroutine.yield)
-    end)
+   
+    return cat:dbind (
+        function () return rest_cat end,
+        function (head, tail) return C.stream { 
+            head = head, 
+            tail = tail:mappend (rest_cat)
+        } end,
+        function (f) return C.stream (function ()
+            return f ():mappend (rest_cat)
+        end) end
+    )
 end
 
 function stream.tolist (cat)
-
-    local M = lua.current_thread ()
-    local L = cat.value
     
     local tbl = {}
 
-    cat:do_ (function (v) table.insert (tbl, v) end)
+    local function L (c)
+
+        return c:dbind (
+            function () end,
+            function (head, tail) 
+                table.insert (tbl, head)
+                L (tail)
+            end,
+            function (f) L (f ()) end
+        )
+    end
+
+    L (cat)
 
     return C.list (tbl)
 end
 
 function stream.fmap (cat, f)
-    return C.stream (function ()
-        cat:do_ (function (...) coroutine.yield (f (...)) end)    
-    end)
+    return cat:dbind (
+        function () return C.stream () end,
+        function (head, tail) return C.stream { 
+            head = f(head), 
+            tail = tail:fmap (f)
+        } end,
+        function (g) return C.stream (function () 
+            return g ():fmap (f)
+        end) end
+    )
 end
 
-function stream.do_ (cat, f)
-
-    local M = lua.current_thread ()
-    local L = cat.value
-    
-    while true do
-        
-        local retcode, nres = lua.lua_resume (L, M, 0)
-
-        if retcode == lua.LUA_YIELD then f (lua.pop (L, nres))
-        else break end
-    end
-
+function stream:isempty (cat)
+    return cat.value == nil
 end
 
 function stream.filter (cat, p)
 
-    return C.stream (function ()
-        cat:do_ (function (v) 
-            if p (v) then coroutine.yield (v) end 
-        end)
-    end)
+    return cat:dbind (
+        function () return C.stream () end,
+        function (head, tail) 
+            if p (head) then return C.stream { 
+                head = head, tail = tail:filter (p)
+            } else return tail:filter (p) end
+        end,
+        function (f) return C.stream (function () 
+            return f ():filter (p)
+        end) end
+    )
 
 end
 
 function stream.take (cat, n)
 
-    local M = lua.current_thread ()
-    local L = cat.value
-    
-    return C.stream (function () 
-
-        for i = 1, n do
-        
-            local retcode, nres = lua.lua_resume (L, M, 0)
-    
-            if retcode == lua.LUA_YIELD then coroutine.yield (lua.pop (L, nres))
-            else break end
-        end    
-    end)
+    if n == 0 then return C.stream ()
+    else
+        return cat:dbind (
+            function () return C.stream () end,
+            function (head, tail) return C.stream { head = head, tail = tail:take (n-1) } end,
+            function (f) return C.stream (function () return f ():take (n) end) end
+        )
+    end
 end
 
 function stream.ret (cat, v)
-    return C.stream (function () coroutine.yield (v) end)
+    return C.stream { head = v, tail = C.stream () }
 end
 
-function stream.next (cat)
+function stream.head_tail (cat)
 
-    local M = lua.current_thread ()
-    local L = cat.value
+    return cat:dbind (
+        function () error "An empty stream doesn't have a head." end,
+        function (head, tail) return head, tail end,
+        function (f) return f ():head_tail () end
+    )
     
-    local retcode, nres = lua.lua_resume (L, M, 0)
-    if retcode == lua.LUA_YIELD then return lua.pop (L, nres), cat
-    else error (lua.pop (L, nres)) end
-
 end
 
 function C.nats (s)
-
     s = s or 0
-
-    return C.stream (function ()
-        while true do 
-            coroutine.yield (s)
-            s = s + 1
-        end
-    end)
-
+    return C.stream { 
+        head = s,
+        tail = C.stream (function () return C.nats (s + 1) end) 
+    }
 end
 
 function C.primes ()
 
     local function P (S)
 
-        return C.stream (function ()
-            local p, S = S:next ()
-            coroutine.yield (p)
-            P (S:filter (function (n) return n % p > 0 end)):do_(coroutine.yield)
-        end)
+        local p, T = S:head_tail ()
+
+        local function isntmultiple (n) return n % p > 0 end
+
+        return C.stream { 
+            head = p, 
+            tail = C.stream (function () return P (T:filter (isntmultiple)) end) 
+        }        
     end
 
     return P (C.nats (2))
