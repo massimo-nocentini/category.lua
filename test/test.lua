@@ -208,4 +208,39 @@ end
 
 --------------------------------------------------------------------------------
 
+Test_stream = {}
+
+function Test_stream:test_tolist ()
+    
+    local function s ()
+        for i = 1, 10 do coroutine.yield (i) end
+    end
+
+    local cat = C.stream (s)
+    lu.assertEquals (cat:tolist (), C.list { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 } )
+end
+
+function Test_stream:test_take ()
+
+    local cat = C.nats ():take (10)
+    lu.assertEquals (cat:tolist (), C.list { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 } )
+end
+
+function Test_stream:test_fmap ()
+    
+    local i = 1
+    local function s () while i < 11 do coroutine.yield (i); i = i + 1 end end
+
+    local cat = C.stream (s):fmap(add (1))
+    lu.assertEquals (cat:tolist (), C.list { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }:fmap (add (1)) )
+end
+
+function Test_stream:test_mappend ()
+
+    local cat = C.nats ():take (10)
+    lu.assertEquals ((C.nats ():take (10) .. C.nats (100)):take(20):tolist (), 
+                     C.list { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109 } )
+end
+
+--------------------------------------------------------------------------------
 os.exit( lu.LuaUnit.run() )

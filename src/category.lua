@@ -1,4 +1,6 @@
 
+local lua = require 'liblualua'
+
 local C = { }
 
 -----------------------------------------------------------------------
@@ -180,6 +182,113 @@ function product.mappend (cat, rest_cat)
 end
 
 product_mt.__concat = product.mappend
+
+-----------------------------------------------------------------------
+
+
+local stream = {}
+local stream_mt = {__index = stream}
+
+function stream_mt.__eq (v, w)
+    if getmetatable (w) == stream_mt then return v.value == w.value
+    else return false end
+end
+
+function stream_mt.__tostring (cat)
+    return string.format ('%s :: stream', tostring (cat.value))
+end
+
+function C.stream (s)
+
+    local S = lua.lua_newthread ()
+
+    assert (type(s) == 'function', 'Expected a function as lone argument.')
+
+    lua.push (S, s)
+
+    local j = {value = S}
+    setmetatable (j, stream_mt)
+
+    return j
+end
+
+function stream.mempty (cat)
+    return C.stream (function () end)
+end
+
+function stream.mappend (cat, rest_cat)
+    return C.stream (function ()     
+        cat:do_ (coroutine.yield)
+        rest_cat:do_ (coroutine.yield)
+    end)
+end
+
+function stream.tolist (cat)
+
+    local M = lua.current_thread ()
+    local L = cat.value
+    
+    local tbl = {}
+
+    cat:do_ (function (...)
+        for i, v in ipairs (table.pack(...)) do table.insert (tbl, v) end
+    end)
+
+    return C.list (tbl)
+end
+
+function stream.fmap (cat, f)
+    return C.stream (function ()
+        cat:do_ (function (...) coroutine.yield (f (...)) end)    
+    end)
+end
+
+function stream.do_ (cat, f)
+
+    local M = lua.current_thread ()
+    local L = cat.value
+    
+    while true do
+        
+        local retcode, nres = lua.lua_resume (L, M, 0)
+
+        if retcode == lua.LUA_YIELD then f (lua.pop (L, nres))
+        else break end
+    end
+
+end
+
+function stream.take (cat, n)
+
+    local M = lua.current_thread ()
+    local L = cat.value
+    
+    return C.stream (function () 
+
+        for i = 1, n do
+        
+            local retcode, nres = lua.lua_resume (L, M, 0)
+    
+            if retcode == lua.LUA_YIELD then coroutine.yield (lua.pop (L, nres))
+            else break end
+        end    
+    end)
+end
+
+function C.nats (s)
+
+    s = s or 0
+
+    return C.stream (function ()
+        while true do 
+            coroutine.yield (s)
+            s = s + 1
+        end
+    end)
+
+end
+
+stream_mt.__concat = stream.mappend
 
 -----------------------------------------------------------------------
 
