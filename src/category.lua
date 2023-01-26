@@ -3,6 +3,41 @@ local lua = require 'liblualua'
 
 local C = { }
 
+local nothing = {}
+
+local nothing_mt = {
+    __index = nothing, -- where you can find functions.
+}
+
+function nothing_mt.__eq (v, w)
+    return getmetatable (w) == nothing_mt
+end
+
+function nothing_mt.__tostring (cat)
+    return '• :: nothing'
+end
+
+function C.nothing ()
+
+    local j = {}
+    setmetatable (j, nothing_mt)
+
+    return j
+end
+
+function nothing.fmap (cat, f) return cat end
+function nothing.pure (cat, v) return C.just (v) end
+function nothing.applicative (cat, cat_f) return cat end
+nothing.ret = nothing.pure
+function nothing.bind (cat, f) return cat end
+
+function nothing.mappend (cat, another)
+    return another
+end
+
+nothing_mt.__concat = nothing.mappend
+
+
 -----------------------------------------------------------------------
 
 local just = {}
@@ -35,7 +70,9 @@ just.ret = just.pure
 function just.bind (cat, f) return f (cat.value) end
 
 function just.mappend (cat, another)
-    return C.just (cat.value:mappend (another.value))
+    if getmetatable (another) == just_mt then
+        return C.just (cat.value:mappend (another.value))
+    else return cat end
 end
 
 just_mt.__concat = just.mappend
@@ -151,6 +188,12 @@ function fun.applicative (cat, cat_f)
     return C.fun(function (w) return  cat_f.value (w) (cat.value (w)) end)
 end
 
+fun.ret = fun.pure
+
+function fun.bind (cat, f)
+    return C.fun (function (w) return f (cat.value (w)) (w) end)
+end
+
 -----------------------------------------------------------------------
 
 local product = {}
@@ -182,6 +225,78 @@ function product.mappend (cat, rest_cat)
 end
 
 product_mt.__concat = product.mappend
+
+-----------------------------------------------------------------------
+--[[ 
+    data Either a b = Left a | Right b
+
+    fmap :: (b -> c) -> (Either a) b -> (Either a) c
+
+    ret :: b -> (Either a) b
+
+    bind :: m a -> (a -> m b) -> m b
+    bind :: (Either c) a -> (a -> (Either c) b) -> (Either c) b
+--]]
+
+local succeed = {}
+local succeed_mt = {__index = succeed}
+
+function succeed_mt.__eq (v, w)
+    if getmetatable (w) == succeed_mt then return v.value == w.value
+    else return false end
+end
+
+function succeed_mt.__tostring (cat)
+    return string.format ('%s :: succeed', tostring (cat.value))
+end
+
+function C.succeed (v)
+
+    local j = {value = v}
+    setmetatable (j, succeed_mt)
+
+    return j
+end
+
+function succeed.fmap (cat, f) return C.succeed (f (cat.value)) end
+
+function succeed.ret (cat, v) return C.succeed (v) end
+
+function succeed.bind (cat, f) return f (cat.value) end
+
+local failure = {}
+local failure_mt = {__index = failure}
+
+function failure_mt.__eq (v, w)
+    if getmetatable (w) == failure_mt then return v.value == w.value
+    else return false end
+end
+
+function failure_mt.__tostring (cat)
+    return string.format ('%s :: failure', tostring (cat.value))
+end
+
+function C.failure (v)
+
+    local j = {value = v}
+    setmetatable (j, failure_mt)
+
+    return j
+end
+
+function failure.fmap (cat, f) return cat end
+
+function failure.ret (cat, v) return C.succeed (v) end
+
+function failure.bind (cat, f) return cat end
+
+function C.pcall (f, ...)
+
+    local flag, v = pcall (f, ...)
+    if flag then return C.succeed (v)
+    else return C.failure (v) end
+
+end
 
 -----------------------------------------------------------------------
 
@@ -221,9 +336,9 @@ function stream.mappend (cat, rest_cat)
             head = head, 
             tail = tail:mappend (rest_cat)
         } end,
-        function (f) return C.stream (function ()
-            return f ():mappend (rest_cat)
-        end) end
+        function (f) return C.stream (
+            function () return f ():mappend (rest_cat) end
+        ) end
     )
 end
 

@@ -23,6 +23,15 @@ local function replicate (n)
     end
 end
 
+Test_nothing = {}
+
+function Test_nothing:test_tostring ()
+    local j = C.nothing ()
+    lu.assertEquals (tostring (j), '• :: nothing')
+end
+
+--------------------------------------------------------------------------------
+
 Test_just = {}
 
 function Test_just:test_eq ()
