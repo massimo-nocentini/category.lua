@@ -3,6 +3,42 @@ local lua = require 'liblualua'
 
 local C = { }
 
+function C.nats (s)
+    s = s or 0
+    return C.stream { 
+        head = s,
+        tail = C.stream (function () return C.nats (s + 1) end) 
+    }
+end
+
+function C.primes ()
+
+    local function P (S)
+
+        local p, T = S:head_tail ()
+
+        local function isntmultiple (n) return n % p > 0 end
+
+        return C.stream { 
+            head = p, 
+            tail = C.stream (function () return P (T:filter (isntmultiple)) end) 
+        }        
+    end
+
+    return P (C.nats (2))
+end
+
+function C.mconcat (cat, tbl)
+
+    local r = cat:mempty ()
+    
+    for i = #tbl, 1, -1 do r = tbl[i]:mappend (r) end
+
+    return r
+end
+
+-----------------------------------------------------------------------
+
 local nothing = {}
 
 local nothing_mt = {
@@ -36,7 +72,6 @@ function nothing.mappend (cat, another)
 end
 
 nothing_mt.__concat = nothing.mappend
-
 
 -----------------------------------------------------------------------
 
@@ -133,6 +168,8 @@ function list.mappend (cat, rest_cat)
     for i, v in ipairs (rest_cat.value) do table.insert (l, v) end
     return C.list (l)
 end
+
+list.mconcat = C.mconcat
 
 list_mt.__concat = list.mappend
 
@@ -420,31 +457,6 @@ function stream.head_tail (cat)
         function (f) return f ():head_tail () end
     )
     
-end
-
-function C.nats (s)
-    s = s or 0
-    return C.stream { 
-        head = s,
-        tail = C.stream (function () return C.nats (s + 1) end) 
-    }
-end
-
-function C.primes ()
-
-    local function P (S)
-
-        local p, T = S:head_tail ()
-
-        local function isntmultiple (n) return n % p > 0 end
-
-        return C.stream { 
-            head = p, 
-            tail = C.stream (function () return P (T:filter (isntmultiple)) end) 
-        }        
-    end
-
-    return P (C.nats (2))
 end
 
 stream_mt.__concat = stream.mappend

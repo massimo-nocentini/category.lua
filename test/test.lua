@@ -149,8 +149,20 @@ function Test_list:test_mappend ()
     lu.assertEquals (C.list {1, 2, 3}:mappend (C.list {8, 10, 11}), 
                      C.list {1, 2, 3, 8, 10, 11})
     
-    lu.assertEquals (C.list {1, 2, 3} .. C.list {8, 10, 11}, 
+    lu.assertEquals (C.list {1, 2, 3} .. C.list {8, 10, 11},
                      C.list {1, 2, 3, 8, 10, 11})
+end
+
+function Test_list:test_mconcat ()
+
+    lu.assertEquals (C.list ():mconcat {}, C.list {})
+
+    lu.assertEquals (C.list ():mconcat {
+        C.list {1, 2, 3}, 
+        C.list {4, 5, 6, 7}, 
+        C.list {8, 10, 11}
+    }, C.list {1, 2, 3, 4, 5, 6, 7, 8, 10, 11})
+    
 end
 
 function Test_list:test_bind ()
