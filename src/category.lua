@@ -39,6 +39,44 @@ end
 
 -----------------------------------------------------------------------
 
+--[[
+
+    newtype Writer w a = Writer { runWriter :: (a, w) }
+
+    instance (Monoid w) => Monad (Writer w) where
+        return x = Writer (x, mempty)
+        (Writer (x, v)) >>= f = let (Writer (y, v')) = f x in Writer (y, v `mappend` v')
+
+]]
+
+local writer = {}
+local writer_mt = {__index = writer}
+
+function C.writer (s, w)
+
+    if not (w.mempty and w.mappend) then error 'A monoid is required as second argument.' end
+
+    local j = {value = s, monoid = w}
+    setmetatable (j, writer_mt)
+
+    return j
+end
+
+function writer_mt.__tostring (cat)
+    return string.format ('(%s, %s) :: writer', tostring (cat.value), tostring (cat.monoid))
+end
+
+function writer.ret (cat, v) return C.writer (v, cat.monoid:mempty ()) end
+
+function writer.bind (cat, f)
+    -- bind :: (Writer w) a -> (a -> (Writer w) b) -> (Writer w) b
+    local w = f (cat.value)
+    return C.writer (w.value, cat.monoid:mappend (w.monoid))
+end
+
+
+-----------------------------------------------------------------------
+
 local nothing = {}
 
 local nothing_mt = {
@@ -462,5 +500,6 @@ end
 stream_mt.__concat = stream.mappend
 
 -----------------------------------------------------------------------
+
 
 return C

@@ -272,4 +272,29 @@ function Test_stream:test_primes ()
 end
 
 --------------------------------------------------------------------------------
+
+Test_writer = {}
+
+function Test_writer:test_mult_with_log ()
+
+    local function mult_with_log (x) return C.writer (x, C.list { 'Got number: ' .. x}) end
+
+    local cat = mult_with_log (3)
+    
+    local m = cat:bind (
+        function (a)
+            return mult_with_log (5):bind (
+                function (b)
+                    return cat:ret (a * b)
+                end
+            )
+        end
+    )
+    
+    lu.assertEquals (m, C.writer (15, C.list {'Got number: 3', 'Got number: 5'}) )
+end
+
+
+--------------------------------------------------------------------------------
+
 os.exit( lu.LuaUnit.run() )
