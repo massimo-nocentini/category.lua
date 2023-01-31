@@ -300,12 +300,14 @@ function Test_writer:test_gcd ()
     local function gcd (a, b)
 
         if b == 0 then
-            local writer = C.list {'Finished with ' .. a}:tell ()
-            return writer:bind (function () return writer:ret (a) end)
+            return C.list {'Finished with ' .. a}
+                    :tell ()
+                    :bind (function (_, writer) return writer:ret (a) end)
         else 
             local m = a % b
-            local writer = C.list {a .. ' mod ' .. b .. ' = ' .. m}:tell ()
-            return writer:bind (function () return gcd (b, m) end)
+            return C.list {a .. ' mod ' .. b .. ' = ' .. m}
+                    :tell ()
+                    :bind (function () return gcd (b, m) end)
         end
     end
 
@@ -377,7 +379,6 @@ end
 
 function Test_writer:test_final_countdown_diffmonoid ()
 
-    -- gcd :: (int, int) -> writer int [string]
     local function fcd (b)
 
         if b == 0 then
@@ -402,10 +403,8 @@ function Test_writer:test_final_countdown_diffmonoid ()
 
 end
 
-
 function Test_writer:test_final_countdown ()
 
-    -- gcd :: (int, int) -> writer int [string]
     local function fcd (b)
 
         if b == 0 then
