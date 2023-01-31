@@ -294,6 +294,30 @@ function Test_writer:test_mult_with_log ()
     lu.assertEquals (m, C.writer (15, C.list {'Got number: 3', 'Got number: 5'}) )
 end
 
+function Test_writer:test_gcd ()
+
+    -- gcd :: (int, int) -> writer int [string]
+    local function gcd (a, b)
+
+        if b == 0 then
+            local writer = C.list {'Finished with ' .. a}:tell ()
+            return writer:bind (function () return writer:ret (a) end)
+        else 
+            local m = a % b
+            local writer = C.list {a .. ' mod ' .. b .. ' = ' .. m}:tell ()
+            return writer:bind (function () return gcd (b, m) end)
+        end
+    end
+
+    lu.assertEquals (gcd (8, 5), C.writer (1, C.list {
+        '8 mod 5 = 3', 
+        '5 mod 3 = 2', 
+        '3 mod 2 = 1', 
+        '2 mod 1 = 0', 
+        'Finished with 1'
+    }))
+end
+
 
 --------------------------------------------------------------------------------
 

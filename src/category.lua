@@ -37,6 +37,12 @@ function C.mconcat (cat, tbl)
     return r
 end
 
+function C.tell (monoid)
+
+    -- tell :: Monoid w => w -> Writer w ()
+    return C.writer (nil, monoid)
+end
+
 -----------------------------------------------------------------------
 
 --[[
@@ -73,6 +79,8 @@ function writer.bind (cat, f)
     local w = f (cat.value)
     return C.writer (w.value, cat.monoid:mappend (w.monoid))
 end
+
+
 
 
 -----------------------------------------------------------------------
@@ -224,6 +232,8 @@ function list.concat (cat)
 end
 
 function list.bind (cat, f) return cat:fmap (f):concat () end
+
+list.tell = C.tell
 
 -----------------------------------------------------------------------
 
