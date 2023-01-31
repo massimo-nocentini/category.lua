@@ -343,7 +343,7 @@ function Test_writer:test_gcd_diffmonoid ()
     local writer = gcd (8, 5)
 
     lu.assertEquals (writer.value, 1)
-    lu.assertEquals (tostring (writer.monoid), '{ Finished with 1, 2 mod 1 = 0, 3 mod 2 = 1, 5 mod 3 = 2, 8 mod 5 = 3 } :: list :: diffmonoid')
+    lu.assertEquals (tostring (writer.monoid), '{ 8 mod 5 = 3, 5 mod 3 = 2, 3 mod 2 = 1, 2 mod 1 = 0, Finished with 1 } :: list :: diffmonoid')
 end
 
 function Test_writer:test_gcd_diffmonoid_swap ()
@@ -373,7 +373,7 @@ function Test_writer:test_gcd_diffmonoid_swap ()
     local writer = gcd (8, 5)
 
     lu.assertEquals (writer.value, 1)
-    lu.assertEquals (tostring (writer.monoid), '{ 8 mod 5 = 3, 5 mod 3 = 2, 3 mod 2 = 1, 2 mod 1 = 0, Finished with 1 } :: list :: diffmonoid')
+    lu.assertEquals (tostring (writer.monoid), '{ Finished with 1, 2 mod 1 = 0, 3 mod 2 = 1, 5 mod 3 = 2, 8 mod 5 = 3 } :: list :: diffmonoid')
 
 end
 

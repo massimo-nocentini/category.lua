@@ -540,7 +540,7 @@ function diffmonoid.mempty (cat)
 end
 
 function diffmonoid.mappend (cat, another)
-    return C.diffmonoid (function (monoid) return cat.value (another.value (monoid)) end, cat.empty)
+    return C.diffmonoid (function (monoid) return another.value (cat.value (monoid)) end, cat.empty)
 end
 
 diffmonoid_mt.__concat = diffmonoid.mappend
