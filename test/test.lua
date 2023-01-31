@@ -375,6 +375,56 @@ function Test_writer:test_gcd_diffmonoid_swap ()
 
 end
 
+function Test_writer:test_final_countdown_diffmonoid ()
+
+    -- gcd :: (int, int) -> writer int [string]
+    local function fcd (b)
+
+        if b == 0 then
+            return C.list {'0'}
+                    :diffmonoid ()
+                    :tell ()
+        else 
+            return fcd (b - 1):bind (
+                function (m)
+                    assert (m == nil, 'At least we expect this.')
+                    return C.list {tostring (b)}
+                            :diffmonoid ()
+                            :tell ()
+                end
+            )
+        end
+    end
+
+    local writer = fcd (5000)
+
+    lu.assertEquals (writer.value, nil)
+
+end
+
+
+function Test_writer:test_final_countdown ()
+
+    -- gcd :: (int, int) -> writer int [string]
+    local function fcd (b)
+
+        if b == 0 then
+            return C.list {'0'}:tell ()
+        else 
+            return fcd (b - 1):bind (
+                function (m)
+                    assert (m == nil, 'At least we expect this.')
+                    return C.list {tostring (b)}:tell ()
+                end
+            )
+        end
+    end
+
+    local writer = fcd (5000)
+
+    lu.assertEquals (writer.value, nil)
+
+end
 
 --------------------------------------------------------------------------------
 
