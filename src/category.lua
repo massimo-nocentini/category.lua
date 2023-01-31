@@ -80,9 +80,6 @@ function writer.bind (cat, f)
     return C.writer (w.value, cat.monoid:mappend (w.monoid))
 end
 
-
-
-
 -----------------------------------------------------------------------
 
 local nothing = {}
@@ -508,6 +505,53 @@ function stream.head_tail (cat)
 end
 
 stream_mt.__concat = stream.mappend
+
+-----------------------------------------------------------------------
+
+
+--[[
+
+    newtype DiffList a = DiffList { getDiffList :: [a] -> [a] }
+
+    instance Monoid (DiffList a) where
+        mempty = DiffList (\xs -> [] ++ xs)
+        (DiffList f) `mappend` (DiffList g) = DiffList (\xs -> f (g xs))
+
+]]
+
+local diffmonoid = {}
+local diffmonoid_mt = {__index = diffmonoid}
+
+function C.diffmonoid (f, empty)
+
+    local j = {value = f, empty = empty}
+
+    setmetatable (j, diffmonoid_mt)
+
+    return j
+end
+
+function diffmonoid_mt.__tostring (cat)
+    return string.format ('%s :: diffmonoid', tostring (cat ()))
+end
+
+function diffmonoid.mempty (cat)
+    return C.diffmonoid (function (monoid) return monoid:mempty ():mappend (monoid) end, cat.empty)
+end
+
+function diffmonoid.mappend (cat, another)
+    return C.diffmonoid (function (monoid) return cat.value (another.value (monoid)) end, cat.empty)
+end
+
+diffmonoid_mt.__concat = diffmonoid.mappend
+
+function diffmonoid_mt.__call (cat) return cat.value (cat.empty) end
+
+function list.diffmonoid (cat)
+    return C.diffmonoid (function (rest) return rest:mappend (cat) end, cat:mempty ())
+end
+
+diffmonoid.tell = C.tell
 
 -----------------------------------------------------------------------
 

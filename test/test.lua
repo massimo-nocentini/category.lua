@@ -319,6 +319,61 @@ function Test_writer:test_gcd ()
 end
 
 
+function Test_writer:test_gcd_diffmonoid ()
+
+    -- gcd :: (int, int) -> writer int [string]
+    local function gcd (a, b)
+
+        if b == 0 then
+            local writer = C.list {'Finished with ' .. a}:diffmonoid ():tell ()
+            return writer:bind (function () return writer:ret (a) end)
+        else 
+            local m = a % b
+            local writer = C.list {a .. ' mod ' .. b .. ' = ' .. m}:diffmonoid ():tell ()
+            return writer:bind (function () return gcd (b, m) end)
+        end
+    end
+
+    lu.assertEquals (gcd (8, 5), C.writer (1, C.list {
+        '8 mod 5 = 3', 
+        '5 mod 3 = 2', 
+        '3 mod 2 = 1', 
+        '2 mod 1 = 0', 
+        'Finished with 1'
+    }:diffmonoid ()))
+end
+
+function Test_writer:test_gcd_diffmonoid_swap ()
+
+    -- gcd :: (int, int) -> writer int [string]
+    local function gcd (a, b)
+
+        if b == 0 then
+            local writer = C.list {'Finished with ' .. a}:diffmonoid ():tell ()
+            return writer:bind (function () return writer:ret (a) end)
+        else 
+            local cat = gcd (b, a % b)
+
+            return cat:bind (
+                function (m) 
+                    return C.list {a .. ' mod ' .. b .. ' = ' .. m}:diffmonoid ()
+                        :tell ()
+                        :bind (function () return cat:ret (m) end)
+                end
+            )
+        end
+    end
+
+    lu.assertEquals (gcd (8, 5), C.writer (1, C.list {
+        '8 mod 5 = 3', 
+        '5 mod 3 = 2', 
+        '3 mod 2 = 1', 
+        '2 mod 1 = 0', 
+        'Finished with 1'
+    }:diffmonoid ()))
+end
+
+
 --------------------------------------------------------------------------------
 
 os.exit( lu.LuaUnit.run() )
