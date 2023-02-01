@@ -442,17 +442,26 @@ Test_state = {}
 
 function Test_state:test_stack ()
 
-    local pop = C.state (function (s) return s.value, s.next end)
+    local function pop () return C.state (function (s) return s.value, s.next end) end
 
-    local function push (v)
-        return C.state (function (s) return v, { value = v, next = s} end)
-    end 
+    local function push (v) return C.state (function (s) return v, { value = v, next = s} end) end 
 
-    local cat = push (3):bind (function (_) return pop:bind (function (a) return pop end) end)
+    local cat = push (3):bind (function (_) return pop ():bind (function (a) return pop () end) end)
 
-    local v, s = cat { value = 5, next = { value = 8, next = { value = 2, next = { value = 1, next = {}}}}}
+    --[[
+
+    monad do 
+        push (3)
+        a <- pop ()
+        return pop ()
+    end
+
+    ]]
+
+    local s = { value = 8, next = { value = 2, next = { value = 1, next = {}}}}
+    local v, r = cat { value = 5, next = s }
     lu.assertEquals (v, 5)
-    lu.assertEquals (s, { value = 8, next = { value = 2, next = { value = 1, next = {}}}})
+    lu.assertEquals (r, s)
 
 end
 

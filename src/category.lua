@@ -579,23 +579,19 @@ function state_mt.___tostring (cat)
     return string.format ('%s :: state', tostring (cat.value))
 end
 
-function state.ret (cat, v) return C.state (function (...) return v, ... end) end
+function state.ret (cat, v) return C.state (function (s) return v, s end) end
 
 function state.bind (cat, f)
-    -- bind :: (State w) a -> (a -> (State w) b) -> (State w) b
+    -- bind :: (w -> (a, w)) -> (a -> (w -> (b, w)) -> (w -> (b, w))
     return C.state (function (s)
-
-        local function R (v, ...)
-            local state_cat = f (v, cat)
-            return state_cat.value (...)
-        end
-
-        return R (cat.value (s))
+        local v, r = cat.value (s)
+        local state_cat = f (v, cat)
+        return state_cat.value (r)
     end)
 end
 
 state.get = C.state (function (s) return s, s end)
-function state.put (...) return C.state (function (s) return s, ... end) end
+function state.put (r) return C.state (function (s) return s, r end) end
 
 function state_mt.__call (cat, s)
     return cat.value (s)
