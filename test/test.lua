@@ -442,18 +442,17 @@ Test_state = {}
 
 function Test_state:test_stack ()
 
-    local pop = C.state (function (s) return { content = s.value, state = s.next} end)
+    local pop = C.state (function (s) return s.value, s.next end)
+
     local function push (v)
-        return C.state (function (s) return { content = v, state = { value = v, next = s}} end)
+        return C.state (function (s) return v, { value = v, next = s} end)
     end 
 
-    local cat = push (3):bind (function (_)  
-        return pop:bind (function (a)
-            return pop
-        end)
-    end)
+    local cat = push (3):bind (function (_) return pop:bind (function (a) return pop end) end)
 
-    lu.assertEquals (cat { value = 5, next = { value = 8, next = { value = 2, next = { value = 1, next = {}}}}}, nil)
+    local v, s = cat { value = 5, next = { value = 8, next = { value = 2, next = { value = 1, next = {}}}}}
+    lu.assertEquals (v, 5)
+    lu.assertEquals (s, { value = 8, next = { value = 2, next = { value = 1, next = {}}}})
 
 end
 

@@ -576,17 +576,21 @@ function C.state (s)
 end
 
 function state_mt.___tostring (cat)
-    return string.format ('(%s, %s) :: writer', tostring (cat.value), tostring (cat.monoid))
+    return string.format ('%s :: state', tostring (cat.value))
 end
 
-function state.ret (cat, v) return C.state (function (s) return { content = v, state = s} end) end
+function state.ret (cat, v) return C.state (function (...) return v, ... end) end
 
 function state.bind (cat, f)
     -- bind :: (State w) a -> (a -> (State w) b) -> (State w) b
     return C.state (function (s)
-        local state_tbl = cat.value (s)
-        local state_cat = f (state_tbl.content, cat)
-        return state_cat.value (state_tbl.state)
+
+        local function R (v, ...)
+            local state_cat = f (v, cat)
+            return state_cat.value (...)
+        end
+
+        return R (cat.value (s))
     end)
 end
 
