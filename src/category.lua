@@ -594,6 +594,9 @@ function state.bind (cat, f)
     end)
 end
 
+state.get = C.state (function (s) return s, s end)
+function state.put (...) return C.state (function (s) return s, ... end) end
+
 function state_mt.__call (cat, s)
     return cat.value (s)
 end
