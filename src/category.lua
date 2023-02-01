@@ -552,5 +552,48 @@ diffmonoid.tell = C.tell
 
 -----------------------------------------------------------------------
 
+--[[
+
+    newtype State s a = State { runState :: s -> (a, s) }
+
+    instance Monad (State s) where
+        return x = State $ \s -> (x, s)
+        (State h) >>= f = State $ \s -> let (a, newState) = h s
+                                            (State g) = f a
+                                            in g newState
+
+]]
+
+local state = {}
+local state_mt = {__index = state}
+
+function C.state (s)
+
+    local j = {value = s}
+    setmetatable (j, state_mt)
+
+    return j
+end
+
+function state_mt.___tostring (cat)
+    return string.format ('(%s, %s) :: writer', tostring (cat.value), tostring (cat.monoid))
+end
+
+function state.ret (cat, v) return C.state (function (s) return { content = v, state = s} end) end
+
+function state.bind (cat, f)
+    -- bind :: (State w) a -> (a -> (State w) b) -> (State w) b
+    return C.state (function (s)
+        local state_tbl = cat.value (s)
+        local state_cat = f (state_tbl.content, cat)
+        return state_cat.value (state_tbl.state)
+    end)
+end
+
+function state_mt.__call (cat, s)
+    return cat.value (s)
+end
+
+-----------------------------------------------------------------------
 
 return C

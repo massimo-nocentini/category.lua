@@ -435,6 +435,28 @@ function Test_writer:test_final_countdown ()
 
 end
 
+
+--------------------------------------------------------------------------------
+
+Test_state = {}
+
+function Test_state:test_stack ()
+
+    local pop = C.state (function (s) return { content = s.value, state = s.next} end)
+    local function push (v)
+        return C.state (function (s) return { content = v, state = { value = v, next = s}} end)
+    end 
+
+    local cat = push (3):bind (function (_)  
+        return pop:bind (function (a)
+            return pop
+        end)
+    end)
+
+    lu.assertEquals (cat { value = 5, next = { value = 8, next = { value = 2, next = { value = 1, next = {}}}}}, nil)
+
+end
+
 --------------------------------------------------------------------------------
 
 os.exit( lu.LuaUnit.run() )
