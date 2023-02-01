@@ -227,6 +227,16 @@ function Test_fun:test_applicative ()
     lu.assertEquals (cat (5), C.list {8, 10, 2.5})
 end
 
+function Test_fun:test_bind ()
+    
+    local cat = C.fun (mul (2)):bind (
+                        function (a) return C.fun (add (10)):bind (
+                            function (b, cat) return cat:ret (a + b) end) 
+                        end)
+    
+    lu.assertEquals (cat (3), 19)
+end
+
 --------------------------------------------------------------------------------
 
 Test_stream = {}
