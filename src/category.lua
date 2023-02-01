@@ -41,6 +41,10 @@ function C.tell (monoid)
     return C.writer (nil, monoid)
 end
 
+function C.diffmonoid (cat)
+    return C.diffmonoid_new (function (rest) return cat:mappend (rest) end, cat:mempty ())
+end
+
 -----------------------------------------------------------------------
 
 --[[
@@ -107,10 +111,7 @@ function nothing.pure (cat, v) return C.just (v) end
 function nothing.applicative (cat, cat_f) return cat end
 nothing.ret = nothing.pure
 function nothing.bind (cat, f) return cat end
-
-function nothing.mappend (cat, another)
-    return another
-end
+function nothing.mappend (cat, another) return another end
 
 nothing_mt.__concat = nothing.mappend
 
@@ -229,6 +230,7 @@ end
 function list.bind (cat, f) return cat:fmap (f):concat () end
 
 list.tell = C.tell
+list.diffmonoid = C.diffmonoid
 
 -----------------------------------------------------------------------
 
@@ -520,7 +522,8 @@ stream_mt.__concat = stream.mappend
 local diffmonoid = {}
 local diffmonoid_mt = {__index = diffmonoid}
 
-function C.diffmonoid (f, empty)
+function C.diffmonoid_new (f, empty)
+    -- a private constructor for difference monoid.
 
     local j = {value = f, empty = empty}
 
@@ -534,20 +537,16 @@ function diffmonoid_mt.__tostring (cat)
 end
 
 function diffmonoid.mempty (cat)
-    return C.diffmonoid (function (monoid) return monoid:mempty ():mappend (monoid) end, cat.empty)
+    return C.diffmonoid_new (function (monoid) return monoid:mempty ():mappend (monoid) end, cat.empty)
 end
 
 function diffmonoid.mappend (cat, another)
-    return C.diffmonoid (function (monoid) return cat.value (another.value (monoid)) end, cat.empty)
+    return C.diffmonoid_new (function (monoid) return cat.value (another.value (monoid)) end, cat.empty)
 end
 
 diffmonoid_mt.__concat = diffmonoid.mappend
 
 function diffmonoid_mt.__call (cat) return cat.value (cat.empty) end
-
-function list.diffmonoid (cat)
-    return C.diffmonoid (function (rest) return cat:mappend (rest) end, cat:mempty ())
-end
 
 diffmonoid.tell = C.tell
 
