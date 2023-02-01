@@ -1,6 +1,4 @@
 
-local lua = require 'liblualua'
-
 local C = { }
 
 function C.nats (s)
@@ -273,7 +271,7 @@ end
 fun.ret = fun.pure
 
 function fun.bind (cat, f)
-    return C.fun (function (w) return f (cat.value (w)) (w) end)
+    return C.fun (function (w) return f (cat.value (w), cat) (w) end)
 end
 
 -----------------------------------------------------------------------
