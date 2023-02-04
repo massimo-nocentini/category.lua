@@ -189,6 +189,11 @@ function Test_product:test_mappend ()
     lu.assertEquals (C.product (4) .. C.product (11), C.product (4 * 11))
 end
 
+function Test_product:test_pow ()
+    lu.assertEquals (C.product (4) ^ 3, C.product (4 ^ 3))
+    lu.assertEquals (C.product (4) ^ 0, C.product (1))
+end
+
 --------------------------------------------------------------------------------
 
 Test_fun = {}

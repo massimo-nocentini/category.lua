@@ -45,6 +45,20 @@ function C.diffmonoid (cat)
     return C.diffmonoid_new (function (rest) return cat:mappend (rest) end, cat:mempty ())
 end
 
+local monoid_mt = {
+    __pow = function (cat, n)
+
+        -- mpow :: Monoid w => int -> w -> w
+        local each = cat:mempty ()
+    
+        for i = 1, n do each = cat:mappend (each) end
+    
+        return each
+    
+    end,
+    __concat = function (cat, another) return cat:mappend (another) end,
+}
+
 -----------------------------------------------------------------------
 
 --[[
@@ -279,7 +293,11 @@ end
 -----------------------------------------------------------------------
 
 local product = {}
-local product_mt = {__index = product}
+local product_mt = {
+    __index = product,
+    __concat = monoid_mt.__concat,
+    __pow = monoid_mt.__pow,
+}
 
 function product_mt.__eq (v, w)
     if getmetatable (w) == product_mt then return v.value == w.value
@@ -305,8 +323,6 @@ end
 function product.mappend (cat, rest_cat)
     return C.product (cat.value * rest_cat.value)
 end
-
-product_mt.__concat = product.mappend
 
 -----------------------------------------------------------------------
 --[[ 
