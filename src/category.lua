@@ -50,18 +50,19 @@ C.monoid = {
 
         -- mpow :: Monoid w => int -> w -> w
 
-        local function P (r, a, i)
+        local a, r = cat, cat:mempty()
 
-            if i == 0 then return r
-            else
-                if i % 2 == 1 then r = a .. r end
-                return P (r, a .. a, i // 2)
-            end
+        while true do
 
-        end
-
-        return P (cat:mempty (), cat, n)
-    
+            if n % 2 == 1 then
+                r = a:mappend (r)
+                if n == 1 then return r end
+            elseif n == 0 then return r end
+            
+            a = a:mappend (a)
+            n = n // 2
+            
+        end    
     end,
     mempty = function (cat) error ('mempty is required for ' .. tostring (cat)) end,
     mappend = function (cat, another) error ('mappend is required for ' .. tostring (cat)) end,
@@ -71,7 +72,7 @@ C.monoid = {
     
         monoid.__index = monoid
         monoid.__concat = function (cat, another) return cat:mappend (another) end
-        monoid.__pow = monoid.pow
+        monoid.__pow = function (cat, another) return cat:pow (another) end
     
         setmetatable (m, monoid)
     
