@@ -191,7 +191,7 @@ end
 
 function Test_product:test_pow ()
     lu.assertEquals (C.product (4) ^ 3, C.product (4 ^ 3))
-    lu.assertEquals (C.product (4) ^ 0, C.product (1))
+    lu.assertEquals (C.product (4):pow (0), C.product (1))
 end
 
 --------------------------------------------------------------------------------

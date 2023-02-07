@@ -45,18 +45,34 @@ function C.diffmonoid (cat)
     return C.diffmonoid_new (function (rest) return cat:mappend (rest) end, cat:mempty ())
 end
 
-local monoid_mt = {
-    __pow = function (cat, n)
+C.monoid = {
+    pow = function (cat, n)
 
         -- mpow :: Monoid w => int -> w -> w
-        local each = cat:mempty ()
-    
-        for i = 1, n do each = cat:mappend (each) end
-    
-        return each
+
+        if n == 0 then return cat:mempty ()
+        elseif n == 1 then return cat
+        else
+            local r = cat:mappend (cat):pow (n // 2)
+            if n % 2 == 1 then r = cat:mappend (r) end
+            return r
+        end
     
     end,
-    __concat = function (cat, another) return cat:mappend (another) end,
+    mempty = function (cat) error ('mempty is required for ' .. tostring (cat)) end,
+    mappend = function (cat, another) error ('mappend is required for ' .. tostring (cat)) end,
+    create = function (monoid, m)
+    
+        m = m or {}
+    
+        monoid.__index = monoid
+        monoid.__concat = function (cat, another) return cat:mappend (another) end
+        monoid.__pow = monoid.pow
+    
+        setmetatable (m, monoid)
+    
+        return m
+    end,
 }
 
 -----------------------------------------------------------------------
@@ -292,29 +308,7 @@ end
 
 -----------------------------------------------------------------------
 
-local product = {}
-local product_mt = {
-    __index = product,
-    __concat = monoid_mt.__concat,
-    __pow = monoid_mt.__pow,
-}
-
-function product_mt.__eq (v, w)
-    if getmetatable (w) == product_mt then return v.value == w.value
-    else return false end
-end
-
-function product_mt.__tostring (cat)
-    return string.format ('%s :: product', tostring (cat.value))
-end
-
-function C.product (v)
-
-    local j = {value = v}
-    setmetatable (j, product_mt)
-
-    return j
-end
+local product = C.monoid:create ()
 
 function product.mempty (cat)
     return C.product (1)
@@ -322,6 +316,19 @@ end
 
 function product.mappend (cat, rest_cat)
     return C.product (cat.value * rest_cat.value)
+end
+
+function product.__eq (v, w)
+    if getmetatable (w) == product_mt then return v.value == w.value
+    else return false end
+end
+
+function product.__tostring (cat)
+    return string.format ('%s :: product', tostring (cat.value))
+end
+
+function C.product (v)
+    return product:create { value = v }
 end
 
 -----------------------------------------------------------------------
