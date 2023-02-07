@@ -50,13 +50,17 @@ C.monoid = {
 
         -- mpow :: Monoid w => int -> w -> w
 
-        if n == 0 then return cat:mempty ()
-        elseif n == 1 then return cat
-        else
-            local r = cat:mappend (cat):pow (n // 2)
-            if n % 2 == 1 then r = cat:mappend (r) end
-            return r
+        local function P (r, a, i)
+
+            if i == 0 then return r
+            else
+                if i % 2 == 1 then r = a .. r end
+                return P (r, a .. a, i // 2)
+            end
+
         end
+
+        return P (cat:mempty (), cat, n)
     
     end,
     mempty = function (cat) error ('mempty is required for ' .. tostring (cat)) end,
