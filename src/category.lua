@@ -45,6 +45,8 @@ function C.diffmonoid (cat)
     return C.diffmonoid_new (function (rest) return cat:mappend (rest) end, cat:mempty ())
 end
 
+-- we prefer to have a simpler approach, define here some functions for monoids then let users
+-- to attach them in their monoids.
 C.monoid = {
     pow = function (cat, n)
 
@@ -62,10 +64,11 @@ C.monoid = {
             a = a:mappend (a)
             n = n // 2
             
-        end    
+        end
     end,
     mempty = function (cat) error ('mempty is required for ' .. tostring (cat)) end,
     mappend = function (cat, another) error ('mappend is required for ' .. tostring (cat)) end,
+    ismonoid = true,
     create = function (monoid, m)
     
         m = m or {}
