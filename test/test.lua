@@ -1,7 +1,6 @@
 
 local lu = require 'luaunit'
 local C = require 'category'
-local lambda = require 'operator'
 
 local function string_append (a)
     return function (b) return a .. b end
